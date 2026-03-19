@@ -1,0 +1,27 @@
+[
+    {
+        "brand": "Toyota",
+        "model": "Camry",
+        "price": 25000
+    },
+    {
+        "brand": "BMW",
+        "model": "M5",
+        "price": 85000
+    },
+    {
+        "brand": "Mercedes",
+        "model": "E-Class",
+        "price": 75000
+    },
+    {
+        "brand": "Audi",
+        "model": "A6",
+        "price": 65000
+    },
+    {
+        "brand": "Honda",
+        "model": "Civic",
+        "price": 22000
+    }
+]
