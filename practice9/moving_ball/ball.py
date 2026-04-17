@@ -14,7 +14,7 @@ class Ball:
     COLOUR    = (220, 40, 40)
     HIGHLIGHT = (255, 120, 120)
 
-    def init(self, screen_width: int, screen_height: int):
+    def __init__(self, screen_width: int, screen_height: int):
         self.sw = screen_width
         self.sh = screen_height
         # Start at screen centre
