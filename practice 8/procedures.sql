@@ -73,7 +73,7 @@ END;
 $$;
 
 
-CREATE OR REPLACE PROCEDURE delete_contact(
+CREATE OR REPLACE PROCEDURE d3t(
     p_username TEXT DEFAULT NULL,
     p_phone    TEXT DEFAULT NULL
 )
