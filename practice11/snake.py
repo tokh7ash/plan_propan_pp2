@@ -6,7 +6,7 @@ import random
 pygame.init()
 
 # Настройки экрана
-WIDTH, HEIGHT = 900, 700
+WIDTH, HEIGHT = 600, 400
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Snake Game: Levels & Speed")
 
@@ -26,6 +26,37 @@ clock = pygame.time.Clock()
 score_font = pygame.font.SysFont("Segoe UI", 25)
 level_font = pygame.font.SysFont("Segoe UI", 25, bold=True)
 
+# --- НОВОЕ: типы еды с разными весами ---
+# Каждый тип имеет: цвет, стоимость (value) и время жизни (lifetime в секундах)
+# Вес (weight) определяет шанс появления: чем больше — тем чаще
+FOOD_TYPES = [
+    {"color": RED,            "value": 1,  "lifetime": 8,  "weight": 6},  # обычная — часто
+    {"color": (255, 165, 0),  "value": 3,  "lifetime": 5,  "weight": 3},  # оранжевая — редко
+    {"color": YELLOW,         "value": 5,  "lifetime": 3,  "weight": 1},  # золотая — очень редко
+]
+
+def spawn_food(snake_list):
+    """Создаёт новую еду случайного типа (по весам) не на змейке.
+    Возвращает словарь с координатами, типом и временем появления."""
+    while True:
+        fx = round(random.randrange(0, WIDTH - SNAKE_BLOCK) / 10.0) * 10.0
+        fy = round(random.randrange(0, HEIGHT - SNAKE_BLOCK) / 10.0) * 10.0
+        # Проверяем, что еда не появилась на теле змейки
+        if [fx, fy] not in snake_list:
+            break
+
+    # Выбираем тип еды по весам
+    food_type = random.choices(FOOD_TYPES, weights=[f["weight"] for f in FOOD_TYPES])[0]
+
+    return {
+        "x": fx,
+        "y": fy,
+        "color": food_type["color"],
+        "value": food_type["value"],
+        "lifetime": food_type["lifetime"],
+        "spawn_time": time.time()  # запоминаем время появления
+    }
+
 def display_status(score, level):
     """Отображает текущий счет и уровень на экране."""
     value = score_font.render(f"Score: {score}", True, YELLOW)
@@ -37,6 +68,20 @@ def draw_snake(snake_block, snake_list):
     """Рисует каждый сегмент змейки."""
     for x in snake_list:
         pygame.draw.rect(screen, GREEN, [x[0], x[1], snake_block, snake_block])
+
+def draw_food(food):
+    """Рисует еду и таймер над ней.
+    Таймер мигает красным, когда осталось меньше 2 секунд."""
+    pygame.draw.rect(screen, food["color"], [food["x"], food["y"], SNAKE_BLOCK, SNAKE_BLOCK])
+
+    # Считаем оставшееся время жизни еды
+    elapsed = time.time() - food["spawn_time"]
+    remaining = food["lifetime"] - elapsed
+
+    # Цвет таймера: красный если мало времени, белый иначе
+    timer_color = RED if remaining < 2 else WHITE
+    timer_text = score_font.render(f"{remaining:.1f}s", True, timer_color)
+    screen.blit(timer_text, [food["x"] - 10, food["y"] - 20])
 
 def game_loop():
     game_over = False
@@ -54,11 +99,10 @@ def game_loop():
     # Стартовые показатели
     score = 0
     level = 1
-    speed = 15 
+    speed = 15
 
     # Генерация первой еды
-    foodx = round(random.randrange(0, WIDTH - SNAKE_BLOCK) / 10.0) * 10.0
-    foody = round(random.randrange(0, HEIGHT - SNAKE_BLOCK) / 10.0) * 10.0
+    food = spawn_food(snake_list)
 
     while not game_over:
 
@@ -101,9 +145,15 @@ def game_loop():
         x1 += x1_change
         y1 += y1_change
         screen.fill(BLACK)
-        
-        # Рисуем еду
-        pygame.draw.rect(screen, RED, [foodx, foody, SNAKE_BLOCK, SNAKE_BLOCK])
+
+        # --- НОВОЕ: проверяем, не истекло ли время жизни еды ---
+        elapsed = time.time() - food["spawn_time"]
+        if elapsed >= food["lifetime"]:
+            # Еда исчезла — спавним новую
+            food = spawn_food(snake_list)
+
+        # Рисуем еду с таймером
+        draw_food(food)
         
         # Логика роста змейки
         snake_head = [x1, y1]
@@ -122,17 +172,17 @@ def game_loop():
         pygame.display.update()
 
         # 2. Логика поедания еды
-        if x1 == foodx and y1 == foody:
-            # Генерация новой еды так, чтобы она не попала на змейку
-            foodx = round(random.randrange(0, WIDTH - SNAKE_BLOCK) / 10.0) * 10.0
-            foody = round(random.randrange(0, HEIGHT - SNAKE_BLOCK) / 10.0) * 10.0
+        if x1 == food["x"] and y1 == food["y"]:
             length_of_snake += 1
-            score += 1
+            # Прибавляем стоимость съеденной еды (не просто +1)
+            score += food["value"]
+            # Спавним новую еду
+            food = spawn_food(snake_list)
             
             # 3. Добавление уровней: каждые 5 очков — новый уровень
             if score % 5 == 0:
                 level += 1
-                speed += 3 # 4. Увеличение скорости при переходе на новый уровень
+                speed += 3  # 4. Увеличение скорости при переходе на новый уровень
 
         clock.tick(speed)
 
