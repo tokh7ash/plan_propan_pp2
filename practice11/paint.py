@@ -39,12 +39,13 @@ ROW2_TOOLS = [
     ('rtriangle', 'П треугольник'),
     ('etriangle', 'Р треугольник'),
     ('rhombus',   'Ромб'),
+    ('circle',    'Круг'),           # НОВОЕ
 ]
 
 # Все инструменты вместе
 ALL_TOOLS = ROW1_TOOLS + ROW2_TOOLS
 
-SHAPE_TOOLS = {'rect', 'square', 'rtriangle', 'etriangle', 'rhombus'}
+SHAPE_TOOLS = {'rect', 'square', 'rtriangle', 'etriangle', 'rhombus', 'circle'}  # НОВОЕ: circle
 
 
 def get_triangle_points(p1, p2, kind):
@@ -88,7 +89,7 @@ def build_buttons(font):
         rect = pygame.Rect(i * bw1, 1, bw1 - 2, 40)
         buttons.append((rect, tid, label))
 
-    # Ряд 2 — 3 кнопки + палитра справа от них
+    # Ряд 2 — 4 кнопки + палитра справа от них
     bw2 = (WIN_W // 2) // len(ROW2_TOOLS)
     for i, (tid, label) in enumerate(ROW2_TOOLS):
         rect = pygame.Rect(i * bw2, 46, bw2 - 2, 40)
@@ -155,6 +156,12 @@ def draw_shape_preview(screen, cur_mode, p1, p2):
         pts = [(px, py + TOOLBAR_H) for px, py in get_rhombus_points(p1, p2)]
         pygame.draw.polygon(screen, col, pts, 1)
 
+    # НОВОЕ: превью круга
+    elif cur_mode == 'circle':
+        cx, cy = p1
+        r = int(math.hypot(p2[0] - p1[0], p2[1] - p1[1]))
+        pygame.draw.circle(screen, col, (cx, cy + TOOLBAR_H), r, 1)
+
 
 def main():
     pygame.init()
@@ -184,7 +191,7 @@ def main():
                 sys.exit()
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_c:      canvas.fill(CANVAS_BG)  # очистить
+                if event.key == pygame.K_c:        canvas.fill(CANVAS_BG)
                 elif event.key == pygame.K_ESCAPE: return
 
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -243,6 +250,11 @@ def main():
                             pygame.draw.polygon(canvas, cur_color,
                                                 get_rhombus_points(p1, p2), 2)
 
+                        # НОВОЕ: финальный круг
+                        elif cur_mode == 'circle':
+                            r = int(math.hypot(p2[0] - p1[0], p2[1] - p1[1]))
+                            pygame.draw.circle(canvas, cur_color, p1, r, 2)
+
                         shape_start = None
                     else:
                         drawing  = False
@@ -254,7 +266,6 @@ def main():
 
                 if drawing and canvas_y >= 0:
                     cur_pos = (mx, canvas_y)
-                    # Ластик рисует цветом фона, кисть — текущим цветом
                     color = CANVAS_BG if cur_mode == 'erase' else cur_color
 
                     if last_pos:

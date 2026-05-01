@@ -8,7 +8,7 @@ def main():
     clock = pygame.time.Clock()
 
     canvas = pygame.Surface((640, 480))
-    canvas_color = (0, 0, 0)  # Цвет фона холста
+    canvas_color = (0, 0, 0)
     canvas.fill(canvas_color)
 
     radius = 5
@@ -17,9 +17,13 @@ def main():
     last_pos = None
     mode = 'blue'
 
-    # Режим прямоугольника
-    rect_mode = False        # True — рисуем прямоугольник
-    rect_start = None        # Точка начала прямоугольника (где нажали ЛКМ)
+    rect_mode = False
+    rect_start = None
+
+    # ── НОВОЕ: режим круга ──────────────────────────────────────────────
+    circle_mode = False      # True — рисуем круг
+    circle_start = None      # Центр круга (где нажали ЛКМ)
+    # ────────────────────────────────────────────────────────────────────
 
     colors = {
         'red': (255, 0, 0),
@@ -41,32 +45,49 @@ def main():
                     canvas.fill(canvas_color)
                 elif event.key == pygame.K_ESCAPE:
                     return
-                elif event.key == pygame.K_t:  # T — переключить режим прямоугольника
+                elif event.key == pygame.K_t:
                     rect_mode = not rect_mode
+                    circle_mode = False          # НОВОЕ: выключаем круг при T
+                # ── НОВОЕ ──────────────────────────────────────────────
+                elif event.key == pygame.K_o:   # O — переключить режим круга
+                    circle_mode = not circle_mode
+                    rect_mode = False            # выключаем прямоугольник при O
+                # ───────────────────────────────────────────────────────
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # ЛКМ
+                if event.button == 1:
                     if rect_mode:
-                        rect_start = event.pos   # запоминаем начальную точку
+                        rect_start = event.pos
+                    # ── НОВОЕ ──────────────────────────────────────────
+                    elif circle_mode:
+                        circle_start = event.pos  # запоминаем центр
+                    # ───────────────────────────────────────────────────
                     else:
                         drawing = True
-                elif event.button == 3:  # ПКМ - Ластик
+                elif event.button == 3:
                     erasing = True
-                elif event.button == 4:  # Колесо вверх
+                elif event.button == 4:
                     radius = min(50, radius + 1)
-                elif event.button == 5:  # Колесо вниз
+                elif event.button == 5:
                     radius = max(1, radius - 1)
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     if rect_mode and rect_start:
-                        # Отпустили кнопку — рисуем финальный прямоугольник на холсте
                         x = min(rect_start[0], event.pos[0])
                         y = min(rect_start[1], event.pos[1])
                         w = abs(event.pos[0] - rect_start[0])
                         h = abs(event.pos[1] - rect_start[1])
                         pygame.draw.rect(canvas, colors[mode], (x, y, w, h), 2)
                         rect_start = None
+                    # ── НОВОЕ ──────────────────────────────────────────
+                    elif circle_mode and circle_start:
+                        dx = event.pos[0] - circle_start[0]
+                        dy = event.pos[1] - circle_start[1]
+                        r = int((dx**2 + dy**2) ** 0.5)
+                        pygame.draw.circle(canvas, colors[mode], circle_start, r, 2)
+                        circle_start = None
+                    # ───────────────────────────────────────────────────
                     else:
                         drawing = False
                         last_pos = None
@@ -77,7 +98,6 @@ def main():
             if event.type == pygame.MOUSEMOTION:
                 if drawing or erasing:
                     current_pos = event.pos
-                    # Если стираем, используем цвет фона, иначе текущий цвет
                     color = canvas_color if erasing else colors[mode]
 
                     if last_pos:
@@ -93,13 +113,20 @@ def main():
 
         mouse_pos = pygame.mouse.get_pos()
 
-        # Превью прямоугольника — показываем пока держим ЛКМ в режиме rect
         if rect_mode and rect_start:
             x = min(rect_start[0], mouse_pos[0])
             y = min(rect_start[1], mouse_pos[1])
             w = abs(mouse_pos[0] - rect_start[0])
             h = abs(mouse_pos[1] - rect_start[1])
             pygame.draw.rect(screen, colors[mode], (x, y, w, h), 2)
+
+        # ── НОВОЕ: превью круга ─────────────────────────────────────────
+        if circle_mode and circle_start:
+            dx = mouse_pos[0] - circle_start[0]
+            dy = mouse_pos[1] - circle_start[1]
+            r = int((dx**2 + dy**2) ** 0.5)
+            pygame.draw.circle(screen, colors[mode], circle_start, r, 2)
+        # ────────────────────────────────────────────────────────────────
 
         indicator_color = (255, 255, 255) if erasing else colors[mode]
         pygame.draw.circle(screen, indicator_color, mouse_pos, radius, 1)
